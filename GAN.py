@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-np.randomseed(15)
+np.random.seed(15)
 
 
 
