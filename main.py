@@ -7,7 +7,7 @@ import time
 import csv
 
 from matplotlib.colors import ListedColormap
-from sklearn import cross_validation, datasets, linear_model, metrics
+from sklearn import datasets, linear_model, metrics
 
 
 np.random.seed(15)
@@ -50,10 +50,13 @@ if INPUT_DATA == 2:
 #%% model data
 if INPUT_DATA == 1:
     
-    [X,Y] = datasets.make_blobs(n_samples = 500, n_features = 5, centers = 10, cluster_std = [1.0,2,4,5.5,0.5], random_state = 5)
+    [X,Y] = datasets.make_blobs(n_samples = 500, n_features = 2, centers = 5, cluster_std = [0.2,0.2,0.3,0.15,0.15], random_state = 57)
     
 #%%
 
 #Logistic Regression
-    
-    
+
+multi_class = "multinomial"
+clf = linear_model.LogisticRegression(solver ="sag", penalty= "l2", max_iter= 1000,random_state= 15, multi_class= multi_class).fit(X,Y)
+
+print("training score : %.3f (%s)" % (clf.score(X, Y), multi_class))
