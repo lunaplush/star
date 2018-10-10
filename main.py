@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -94,12 +95,40 @@ if INPUT_DATA == 1:
     [X,Y] = datasets.make_blobs(n_samples = 500, n_features = 2, centers = 4, cluster_std = [0.2,0.2,0.3,0.15,0.15], random_state = 58)
 
 
+
+#%%
+input_shape = X.shape[1]
+output_shape = len(set(Y))
+PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 10}  
+
+#https://github.com/pytorch/examples/blob/master/mnist/main.py
+
+class Net(nn.Module):
+    def __init__(self):
+        super(Net,self).__init__()
+        self.fc1 = nn.Linear(input_shape,50)
+        self.fc2 = nn.Linear(50,output_shape)
+    def.forward(self,x):  
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return F.log_softmax(x,dim =1)
+def train(args, model, X, optimizer, epoch):
+   model.train()
+
+  
+model = Net()
+optimizer = optim.SGD(model.parameters(), lr = PARAMETERS["lr"], momentum = PARAMETERS["momentum"])
+    
+for epoch in range(1, PARAMETERS["epochs"] + 1):
+    train(PARAMETERS, model, (X,Y), optimizer, epoch)
+    test (PARAMETERS, model, (X,Y))
+    
 #%%    
 #Logistic Regression
 
-multi_class = "multinomial"
-clf = linear_model.LogisticRegression(solver ="sag", penalty= "l2", max_iter= 1000,random_state= 15, multi_class= multi_class).fit(X,Y)
-print("training score : %.3f (%s)" % (clf.score(X, Y), multi_class))
+#multi_class = "multinomial"
+#clf = linear_model.LogisticRegression(solver ="sag", penalty= "l2", max_iter= 1000,random_state= 15, multi_class= multi_class).fit(X,Y)
+#print("training score : %.3f (%s)" % (clf.score(X, Y), multi_class))
 
 
    
