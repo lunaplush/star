@@ -1,4 +1,5 @@
 import torch
+import torch.utils.data as torchdata
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
@@ -96,6 +97,11 @@ if INPUT_DATA == 1:
 
 
 
+#%%
+    # PyTorch Dataset
+class MyDataSet(torchdata.DataSet):
+    
+    
 #%%
 input_shape = X.shape[1]
 output_shape = len(set(Y))
