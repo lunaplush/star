@@ -99,7 +99,7 @@ if INPUT_DATA == 1:
 #%%
 input_shape = X.shape[1]
 output_shape = len(set(Y))
-PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 10}  
+PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 10, "batchsize": 32}
 
 #https://github.com/pytorch/examples/blob/master/mnist/main.py
 
@@ -108,20 +108,51 @@ class Net(nn.Module):
         super(Net,self).__init__()
         self.fc1 = nn.Linear(input_shape,50)
         self.fc2 = nn.Linear(50,output_shape)
-    def.forward(self,x):  
+    def forward(self,x):
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return F.log_softmax(x,dim =1)
-def train(args, model, X, optimizer, epoch):
-   model.train()
 
-  
+
+def train(args, model, X,Y, optimizer, epoch):
+   model.train()
+   batchsize = args["batchsize"]
+   batch_idx = 0
+   while (batch_idx + 1) * batchsize <= X.shape[0]:
+       data = X[batch_idx*batchsize:(batch_idx+1)*batchsize,:]
+       target = Y[batch_idx*batchsize:(batch_idx+1)*batchsize]
+       optimizer.zero_grad()
+       output = model(data)
+       loss = F.nll_loss(output,target)
+       loss.backward()
+       optimizer.step()
+       batch_idx += 1
+       print('Train Epoch: {} Loss {:.6f}%'.format(epoch, loss.item()))
+
+def test(args,model,X,Y):
+    model.eval()
+    test_loss = 0
+    correct = 0
+    batch_idx = 0
+    batchsize = args["batchsize"]
+    with torch.no_grad():
+        while (batch_idx + 1)* batchsize <= X.shape[0]:
+            data = X[batch_idx*batchsize:(batch_idx+1) * batchsize, :]
+            target =  Y[batch_idx*batchsize: (batch_idx+1)*batchsize ]
+            output = model(data)
+            test_loss += F.nll_loss(output,target,reduction= 'sum').item()
+            pred = output.max(1, keepdim = True) [1]
+            correct =pred.eq(target.view_as(pred)).sum().item()
+            batch_idx +=1
+    test_loss /= X.shape[0]//batchsize
+    acc =  100. * correct / (X.shape[0]//batchsize)
+    print('Test set: Average loss {:.4f}, Accuracy {} / {} (){:.0f}%'.format(test_loss,correct,X.shape[0]//batchsize, acc ))
 model = Net()
 optimizer = optim.SGD(model.parameters(), lr = PARAMETERS["lr"], momentum = PARAMETERS["momentum"])
     
 for epoch in range(1, PARAMETERS["epochs"] + 1):
-    train(PARAMETERS, model, (X,Y), optimizer, epoch)
-    test (PARAMETERS, model, (X,Y))
+    train(PARAMETERS, model, X,Y, optimizer, epoch)
+    test (PARAMETERS, model, X,Y)
     
 #%%    
 #Logistic Regression
