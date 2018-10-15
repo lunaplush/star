@@ -99,13 +99,21 @@ if INPUT_DATA == 1:
 
 #%%
     # PyTorch Dataset
-class MyDataSet(torchdata.DataSet):
-    
+class MyDataSet(torchdata.Dataset):
+    def __init__(self, X,Y):
+        self.X =X
+        self.Y =Y
+    def __len__(self):
+        return X.shape[0]
+
+    def __getitem__(self, idx):
+        sample = (X[idx,:],Y[idx])
+        return sample
     
 #%%
 input_shape = X.shape[1]
 output_shape = len(set(Y))
-PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 10, "batchsize": 32}
+PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 10, "batchsize": 32, "batchsize_test": 500}
 
 #https://github.com/pytorch/examples/blob/master/mnist/main.py
 
@@ -120,45 +128,50 @@ class Net(nn.Module):
         return F.log_softmax(x,dim =1)
 
 
-def train(args, model, X,Y, optimizer, epoch):
+def train(args, model, train_loader, optimizer, epoch):
    model.train()
-   batchsize = args["batchsize"]
-   batch_idx = 0
-   while (batch_idx + 1) * batchsize <= X.shape[0]:
-       data = X[batch_idx*batchsize:(batch_idx+1)*batchsize,:]
-       target = Y[batch_idx*batchsize:(batch_idx+1)*batchsize]
+  # batchsize = args["batchsize"]
+  # batch_idx = 0
+   #while (batch_idx + 1) * batchsize <= X.shape[0]:
+    #   data = X[batch_idx*batchsize:(batch_idx+1)*batchsize,:]
+     #  target = Y[batch_idx*batchsize:(batch_idx+1)*batchsize]
+   for data,target in train_loader:
        optimizer.zero_grad()
        output = model(data)
        loss = F.nll_loss(output,target)
        loss.backward()
        optimizer.step()
-       batch_idx += 1
+       #batch_idx += 1
        print('Train Epoch: {} Loss {:.6f}%'.format(epoch, loss.item()))
 
-def test(args,model,X,Y):
+def test(args,model,test_loader):
     model.eval()
     test_loss = 0
     correct = 0
-    batch_idx = 0
-    batchsize = args["batchsize"]
+    #batch_idx = 0
+    #batchsize = args["batchsize"]
     with torch.no_grad():
-        while (batch_idx + 1)* batchsize <= X.shape[0]:
-            data = X[batch_idx*batchsize:(batch_idx+1) * batchsize, :]
-            target =  Y[batch_idx*batchsize: (batch_idx+1)*batchsize ]
+        #while (batch_idx + 1)* batchsize <= X.shape[0]:
+         #   data = X[batch_idx*batchsize:(batch_idx+1) * batchsize, :]
+          #  target =  Y[batch_idx*batchsize: (batch_idx+1)*batchsize ]
+
+        for data, target in test_loader:
             output = model(data)
             test_loss += F.nll_loss(output,target,reduction= 'sum').item()
             pred = output.max(1, keepdim = True) [1]
             correct =pred.eq(target.view_as(pred)).sum().item()
-            batch_idx +=1
-    test_loss /= X.shape[0]//batchsize
-    acc =  100. * correct / (X.shape[0]//batchsize)
-    print('Test set: Average loss {:.4f}, Accuracy {} / {} (){:.0f}%'.format(test_loss,correct,X.shape[0]//batchsize, acc ))
+            #batch_idx +=1
+    test_loss /= X.shape[0]//len(test_loader)
+    acc =  100. * correct / (X.shape[0]//len(test_loader))
+    print('Test set: Average loss {:.4f}, Accuracy {} / {} (){:.0f}%'.format(test_loss,correct,X.shape[0]//len(test_loader), acc ))
 model = Net()
 optimizer = optim.SGD(model.parameters(), lr = PARAMETERS["lr"], momentum = PARAMETERS["momentum"])
-    
+PSdataset = MyDataSet(X,Y)
+train_loader = torchdata.DataLoader(PSdataset, batch_size= PARAMETERS["batchsize"], shuffle =True )
+test_loader  = torchdata.DataLoader(PSdataset,batch_size= PARAMETERS["batchsize_test"], shuffle = True)
 for epoch in range(1, PARAMETERS["epochs"] + 1):
-    train(PARAMETERS, model, X,Y, optimizer, epoch)
-    test (PARAMETERS, model, X,Y)
+    train(PARAMETERS, model, train_loader, optimizer, epoch)
+    test (PARAMETERS, model, test_loader)
     
 #%%    
 #Logistic Regression
