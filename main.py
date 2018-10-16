@@ -101,14 +101,20 @@ if INPUT_DATA == 1:
     # PyTorch Dataset
 class MyDataSet(torchdata.Dataset):
     def __init__(self, X,Y):
-        self.X =X
-        self.Y =Y
+        self.X =torch.from_numpy(X)
+        self.Y =torch.from_numpy(Y)
     def __len__(self):
         return X.shape[0]
 
     def __getitem__(self, idx):
-        sample = (X[idx,:],Y[idx])
+        sample = (X[idx,:],self.code_to_vec(Y[idx] - 1))
         return sample
+    
+    #https://discuss.pytorch.org/t/multi-label-classification-in-pytorch/905
+    def code_to_vec(self, class_num):
+        y = np.zeros(output_shape)
+        y[class_num] = 1
+        return y
     
 #%%
 input_shape = X.shape[1]
@@ -122,11 +128,19 @@ class Net(nn.Module):
         super(Net,self).__init__()
         self.fc1 = nn.Linear(input_shape,50)
         self.fc2 = nn.Linear(50,output_shape)
+   
     def forward(self,x):
+        x =  x.view(-1,self.num_flat_features(x))
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return F.log_softmax(x,dim =1)
-
+   
+    def num_flat_features(self,x):
+        size = x.size()[1:]
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
 
 def train(args, model, train_loader, optimizer, epoch):
    model.train()
@@ -170,6 +184,8 @@ PSdataset = MyDataSet(X,Y)
 train_loader = torchdata.DataLoader(PSdataset, batch_size= PARAMETERS["batchsize"], shuffle =True )
 test_loader  = torchdata.DataLoader(PSdataset,batch_size= PARAMETERS["batchsize_test"], shuffle = True)
 for epoch in range(1, PARAMETERS["epochs"] + 1):
+    
+    ZERO GRAD
     train(PARAMETERS, model, train_loader, optimizer, epoch)
     test (PARAMETERS, model, test_loader)
     
