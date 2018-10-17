@@ -131,7 +131,8 @@ class Net(nn.Module):
    
     def forward(self,x):
         x =  x.view(-1,self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
+        x = self.fc1(x)
+        x = F.relu(x)
         x = self.fc2(x)
         return F.log_softmax(x,dim =1)
    
@@ -180,12 +181,13 @@ def test(args,model,test_loader):
     print('Test set: Average loss {:.4f}, Accuracy {} / {} (){:.0f}%'.format(test_loss,correct,X.shape[0]//len(test_loader), acc ))
 model = Net()
 optimizer = optim.SGD(model.parameters(), lr = PARAMETERS["lr"], momentum = PARAMETERS["momentum"])
+X = X.astype(np.float32)
+Y = Y.astype(np.float32)
 PSdataset = MyDataSet(X,Y)
 train_loader = torchdata.DataLoader(PSdataset, batch_size= PARAMETERS["batchsize"], shuffle =True )
 test_loader  = torchdata.DataLoader(PSdataset,batch_size= PARAMETERS["batchsize_test"], shuffle = True)
 for epoch in range(1, PARAMETERS["epochs"] + 1):
-    
-    ZERO GRAD
+    model.zero_grad()
     train(PARAMETERS, model, train_loader, optimizer, epoch)
     test (PARAMETERS, model, test_loader)
     
