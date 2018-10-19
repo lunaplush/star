@@ -112,8 +112,8 @@ class MyDataSet(torchdata.Dataset):
     
     #https://discuss.pytorch.org/t/multi-label-classification-in-pytorch/905
     def code_to_vec(self, class_num):
-        y = np.zeros(output_shape)
-        y[class_num] = 1
+        y = np.zeros(output_shape, dtype = np.float32)
+        y[int(class_num.item())] = 1.
         return y
     
 #%%
@@ -130,11 +130,11 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(50,output_shape)
    
     def forward(self,x):
-        x =  x.view(-1,self.num_flat_features(x))
+        #x =  x.view(-1,self.num_flat_features(x))
         x = self.fc1(x)
         x = F.relu(x)
         x = self.fc2(x)
-        return F.log_softmax(x,dim =1)
+        return x #F.softmax(x,dim =1)
    
     def num_flat_features(self,x):
         size = x.size()[1:]
@@ -152,8 +152,8 @@ def train(args, model, train_loader, optimizer, epoch):
      #  target = Y[batch_idx*batchsize:(batch_idx+1)*batchsize]
    for data,target in train_loader:
        optimizer.zero_grad()
-       output = model(data)
-       loss = F.nll_loss(output,target)
+       output = model(data)      
+       loss = MyLossFunc(output,target)
        loss.backward()
        optimizer.step()
        #batch_idx += 1
@@ -172,14 +172,16 @@ def test(args,model,test_loader):
 
         for data, target in test_loader:
             output = model(data)
-            test_loss += F.nll_loss(output,target,reduction= 'sum').item()
+            test_loss += MyLossFunc(output,target,reduction= 'sum').item()
             pred = output.max(1, keepdim = True) [1]
             correct =pred.eq(target.view_as(pred)).sum().item()
             #batch_idx +=1
     test_loss /= X.shape[0]//len(test_loader)
     acc =  100. * correct / (X.shape[0]//len(test_loader))
     print('Test set: Average loss {:.4f}, Accuracy {} / {} (){:.0f}%'.format(test_loss,correct,X.shape[0]//len(test_loader), acc ))
+
 model = Net()
+MyLossFunc = nn.CrossEntropyLoss
 optimizer = optim.SGD(model.parameters(), lr = PARAMETERS["lr"], momentum = PARAMETERS["momentum"])
 X = X.astype(np.float32)
 Y = Y.astype(np.float32)
