@@ -112,14 +112,14 @@ class MyDataSet(torchdata.Dataset):
     
     #https://discuss.pytorch.org/t/multi-label-classification-in-pytorch/905
     def code_to_vec(self, class_num):
-        y = np.zeros(output_shape)
-        y[class_num] = 1
+        y = np.zeros(output_shape, dtype = np.float32)
+        y[int(class_num.item())] = 1.
         return y
     
 #%%
 input_shape = X.shape[1]
 output_shape = len(set(Y))
-PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 10, "batchsize": 32, "batchsize_test": 500}
+PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 50, "batchsize": 32, "batchsize_test": 500}
 
 #https://github.com/pytorch/examples/blob/master/mnist/main.py
 
@@ -130,11 +130,10 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(50,output_shape)
    
     def forward(self,x):
-        x =  x.view(-1,self.num_flat_features(x))
-        x = self.fc1(x)
-        x = F.relu(x)
+        #x =  x.view(-1,self.num_flat_features(x))
+        x = self.fc1(x).clamp(min = 0)
         x = self.fc2(x)
-        return F.log_softmax(x,dim =1)
+        return x #F.log_softmax(x,dim = 1)
    
     def num_flat_features(self,x):
         size = x.size()[1:]
@@ -144,101 +143,51 @@ class Net(nn.Module):
         return num_features
 
 def train(args, model, train_loader, optimizer, epoch):
-   model.train()
-  # batchsize = args["batchsize"]
-  # batch_idx = 0
-   #while (batch_idx + 1) * batchsize <= X.shape[0]:
-    #   data = X[batch_idx*batchsize:(batch_idx+1)*batchsize,:]
-     #  target = Y[batch_idx*batchsize:(batch_idx+1)*batchsize]
+  # model.train()
+
    for data,target in train_loader:
-       optimizer.zero_grad()
        output = model(data)
-       loss = F.nll_loss(output,target)
+
+       loss = MyLossFunc(output,target)
+       optimizer.zero_grad()
        loss.backward()
        optimizer.step()
-       #batch_idx += 1
-       print('Train Epoch: {} Loss {:.6f}%'.format(epoch, loss.item()))
+
+   print('Train Epoch: {} Loss {:.6f}%'.format(epoch, loss.item()))
 
 def test(args,model,test_loader):
     model.eval()
     test_loss = 0
     correct = 0
-    #batch_idx = 0
-    #batchsize = args["batchsize"]
+
     with torch.no_grad():
-        #while (batch_idx + 1)* batchsize <= X.shape[0]:
-         #   data = X[batch_idx*batchsize:(batch_idx+1) * batchsize, :]
-          #  target =  Y[batch_idx*batchsize: (batch_idx+1)*batchsize ]
 
         for data, target in test_loader:
             output = model(data)
-            test_loss += F.nll_loss(output,target,reduction= 'sum').item()
+            test_loss += MyLossFunc(output,target).item()
             pred = output.max(1, keepdim = True) [1]
-            correct =pred.eq(target.view_as(pred)).sum().item()
+            #correct =pred.eq(target.view_as(pred)).sum().item()
             #batch_idx +=1
     test_loss /= X.shape[0]//len(test_loader)
-    acc =  100. * correct / (X.shape[0]//len(test_loader))
-    print('Test set: Average loss {:.4f}, Accuracy {} / {} (){:.0f}%'.format(test_loss,correct,X.shape[0]//len(test_loader), acc ))
+    #acc =  100. * correct / (X.shape[0]//len(test_loader))
+   # print('Test set: Average loss {:.4f}, Accuracy {} / {} (){:.0f}%'.format(test_loss,correct,X.shape[0]//len(test_loader), acc ))
+    print('Test set: Average loss {:.4f}%'.format(test_loss))
+
+
 model = Net()
+#MyLossFunc = nn.NLLLoss
+
+MyLossFunc = torch.nn.MSELoss(reduction='sum')
+
 optimizer = optim.SGD(model.parameters(), lr = PARAMETERS["lr"], momentum = PARAMETERS["momentum"])
+
 X = X.astype(np.float32)
 Y = Y.astype(np.float32)
 PSdataset = MyDataSet(X,Y)
 train_loader = torchdata.DataLoader(PSdataset, batch_size= PARAMETERS["batchsize"], shuffle =True )
 test_loader  = torchdata.DataLoader(PSdataset,batch_size= PARAMETERS["batchsize_test"], shuffle = True)
 for epoch in range(1, PARAMETERS["epochs"] + 1):
-    model.zero_grad()
+
     train(PARAMETERS, model, train_loader, optimizer, epoch)
     test (PARAMETERS, model, test_loader)
     
-#%%    
-#Logistic Regression
-
-#multi_class = "multinomial"
-#clf = linear_model.LogisticRegression(solver ="sag", penalty= "l2", max_iter= 1000,random_state= 15, multi_class= multi_class).fit(X,Y)
-#print("training score : %.3f (%s)" % (clf.score(X, Y), multi_class))
-
-
-   
-##%%
-
-#I save PS_X_outlier after LocalOutlierFactor with n_neighbors = 20,contamination = 0.07 
-#n_neightbors doesnt influence the result, only contaminations
-#IsolationForest не подходит. Возможно, потому что ему для обучения нужны правильные данные. 
-#Наверое, если предварительную чистку делать LocalOutlierFactor, а потому на почищенных им данных настроить лес, то дальше можно использовать IsolatinForest модел на первом этапе работы алгоритма.
-##OUTLIER detection process comparing
-#clf = LocalOutlierFactor(n_neighbors = 20,contamination = 0.07 )
-#y_pred = clf.fit_predict(X)
-#X_scores = clf.negative_outlier_factor_
-#
-#
-#clf2 = IsolationForest( max_samples=100, random_state=rng)
-#clf2.fit(X)
-#y_pred2 = clf2.predict(X)
-#
-#features_plot = ([0,1],[2,3],[4,5],[6,7],[8,9],[10,11],[12,13],[14,15],[0,16])
-#for f1,f2 in features_plot:
-#    fig = plt.figure(2,figsize = (23,23))
-#    plt.scatter(X[:,f1],X[:,f2], c = Y, cmap = plt.cm.Paired, s = 20, marker = "*",edgecolors='none')
-#    plt.scatter(X[y_pred == -1][:,f1],X[y_pred == -1][:,f2], c = Y[y_pred == -1], cmap = plt.cm.Paired, s = 29, marker = "o",  edgecolors='r', facecolors = 'none')
-#    #plt.scatter(X[y_pred2 == -1][:,f1],X[y_pred2 == -1][:,f2], c = Y[y_pred2 == -1], cmap = plt.cm.Paired, s = 25, marker = "o",  edgecolors='b', facecolors = 'none')
-#    plt.xlim(X[y_pred == 1][:,f1].min(),X[y_pred == 1][:,f1].max())
-#    plt.ylim(X[y_pred == 1][:,f2].min(),X[y_pred == 1][:,f2].max())
-#    fig.savefig("outliert_detection_res07_{}_{}".format(f1,f2))
-#
-#X_new = X[y_pred == 1]
-#Y_new = Y[y_pred == 1]
-#
-##save new
-#Y_new =Y_new.reshape(Y_new.shape[0],1)
-#myfile = open("PS_X_without_outlier.csv","w")
-#with myfile:
-#    writer = csv.writer(myfile)
-#    writer.writerows(X_new)
-#myfile = open("PS_Y_without_outlier.csv","w")
-#with myfile:
-#    writer = csv.writer(myfile)
-#    [writer.writerow(y) for y in Y_new]
-
-      
-
