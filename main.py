@@ -10,6 +10,8 @@ import csv
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.metrics import confusion_matrix
+
 
 
 
@@ -154,7 +156,7 @@ class MyDataSet(torchdata.Dataset):
     
 #%%
 input_shape = X.shape[1]
-output_shape = len(set(Y))
+output_shape = 16#len(set(Y))
 PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 500, "batchsize": 64, "batchsize_test": 500}
 
 #https://github.com/pytorch/examples/blob/m aster/mnist/main.py
@@ -169,7 +171,7 @@ class Net(nn.Module):
         #x =  x.view(-1,self.num_flat_features(x))
         x = self.fc1(x).clamp(min = 0)
         x = self.fc2(x)
-        return F.log_softmax(x,dim = 1)
+        return x#F.log_softmax(x,dim = 1)
    
     def num_flat_features(self,x):
         size = x.size()[1:]
@@ -204,17 +206,22 @@ def test(args,model,test_loader):
             test_loss += MyLossFunc(output,target).item()
 
             pred = output.max(1, keepdim = True)[1]
-            correct += pred.eq(target.view_as(pred)).sum().item()
+            tmp = torch.tensor(pred.eq(target.view_as(pred)),dtype =  torch.float32)
+            correct += int(tmp.sum().item())
             all +=target.shape[0]
 
-
+    C = confusion_matrix(np.array(target),np.array(pred))
     test_loss /= test_loader.__len__()
     acc =  100. * correct / all
    # print('Test set: Average loss {:.4f}, Accuracy {} / {} (){:.0f}%'.format(test_loss,correct,X.shape[0]//len(test_loader), acc ))
     print('Test set: Average loss {:.4f}%  Accuracy {:.2f}% ( {} / {})'.format(test_loss,acc, correct, all))
-
+    print(C)
+    return C,np.array(target),np.array(pred)
 
 model = Net()
+#model.load_state_dict(torch.load("PS_classifier.pt"))
+#model.eval()
+
 MyLossFunc = torch.nn.CrossEntropyLoss()
 #optimizer = optim.Adam(model.parameters(), lr= PARAMETERS['lr'])
 optimizer = optim.SGD(model.parameters(), lr = PARAMETERS["lr"], momentum = PARAMETERS["momentum"])
@@ -237,7 +244,7 @@ train_index,test_index = next(s.split(X,Y))
 PSdataset_train = MyDataSet(X[train_index],Y[train_index], transform= scaler.transform)
 PSdataset_test = MyDataSet(X[test_index],Y[test_index], transform=scaler.transform)
 train_loader = torchdata.DataLoader(PSdataset_train, batch_size= PARAMETERS["batchsize"], shuffle =True )
-test_loader  = torchdata.DataLoader(PSdataset_test,batch_size= PARAMETERS["batchsize_test"], shuffle = True)
+test_loader  = torchdata.DataLoader(PSdataset_test,batch_size=  PSdataset_test.Y.shape[0], shuffle = True)
 for epoch in range(1, PARAMETERS["epochs"] + 1):
 
     train(PARAMETERS, model, train_loader, optimizer, epoch)
@@ -256,5 +263,12 @@ if True:
 
 
 #illustrate
+    
+#load PS_classifier
+   #torch.save(model.state_dict(), "PATH name") - SAVE 
+    
+    # model = Net()
+    #model.load_state_dict(torch.load("PS_classifier.pt"))
+    #model.eval()
 
 
