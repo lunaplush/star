@@ -248,8 +248,9 @@ test_loader  = torchdata.DataLoader(PSdataset_test,batch_size=  PSdataset_test.Y
 for epoch in range(1, PARAMETERS["epochs"] + 1):
 
     train(PARAMETERS, model, train_loader, optimizer, epoch)
-    test (PARAMETERS, model, test_loader)
-
+    C,Y_target,Y_pred =  test(PARAMETERS, model, test_loader)
+F_score = sklearn.metrics.f1_score(Y_target,Y_pred, average = None)
+F_score_avarage = sklearn.metrics.f1_score(Y_target,Y_pred, average = 'micro')
 ILLUSTRATE = True
 if True:
     plt.scatter(X[:, 0], X[:, 1], c=Y, cmap=plt.cm.Paired)
