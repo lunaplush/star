@@ -30,6 +30,16 @@ from IPython import display
 
 torch.set_num_threads(4)
 #%%
+# ===========================
+# IMPORTANT PARAMETER:
+# Number of D updates per G update
+# ===========================
+# k_d, k_g = 1, 1
+PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 10, "batchsize": 64, "batchsize_test": 500, "noise_dim": 20,"k_d":1, "k_g":1, "f1":0,"f2":1}
+
+
+
+#%%
 def sample_noise(N):
     return np.random.normal(size=(N,PARAMETERS["noise_dim"])).astype(np.float32)
 
@@ -38,7 +48,7 @@ def sample_noise(N):
    
 import time
 np.random.seed(12345)
-lims = (-10,10)
+lims = (-3,3)
 
 def vis_data(data, f1,f2):
     """
@@ -235,14 +245,6 @@ class MyDataSet(torchdata.Dataset):
 #%%
 input_shape = X.shape[1]
 output_shape = 16#len(set(Y))
-# ===========================
-# IMPORTANT PARAMETER:
-# Number of D updates per G update
-# ===========================
-# k_d, k_g = 1, 1
-PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 10, "batchsize": 64, "batchsize_test": 500, "noise_dim": 20,"k_d":1, "k_g":1, "f1":0,"f2":1}
-
-
 #%%
 #CLASSICAL GAN
 
@@ -272,8 +274,8 @@ def get_discriminator(in_dim, hidden_dim=100):
 
 #%%
 
-generator = get_generator(PARAMETERS["noise_dim"], out_dim = 2)
-discriminator = get_discriminator(in_dim = 2)
+generator = get_generator(PARAMETERS["noise_dim"], out_dim = input_shape)
+discriminator = get_discriminator(in_dim = input_shape)
 
 lr = PARAMETERS["lr"]
 g_optimizer = optim.Adam(generator.parameters(),     lr=lr, betas=(0.5, 0.999))
@@ -300,13 +302,13 @@ scaler = StandardScaler().fit(X)
 Y = Y.astype(np.int64)
 
 plt.rcParams['figure.figsize'] = (12, 12)
-vis_data(X,PARAMETERS["f1"],PARAMETERS["f2"])
+vis_data(scaler.transform(X),PARAMETERS["f1"],PARAMETERS["f2"])
 vis_g()
-vis_d()
+#vis_d()
 plt.show()
 #s = StratifiedShuffleSplit(n_splits= 1, train_size= 0.7)
 #train_index,test_index = next(s.split(X,Y))
-PSdataset_train = MyDataSet(X,Y, transform= scaler.transform)
+PSdataset_train = MyDataSet(X,Y, transform = scaler.transform)
 #PSdataset_test = MyDataSet(X[test_index],Y[test_index], transform=scaler.transform)
 train_loader = torchdata.DataLoader(PSdataset_train, batch_size= PARAMETERS["batchsize"], shuffle =True )
 #test_loader  = torchdata.DataLoader(PSdataset_test,batch_size=  PSdataset_test.Y.shape[0], shuffle = True)
@@ -344,16 +346,16 @@ def train(args, generator, discriminator, train_loader, d_optimizer, g_optimizer
             # Update
             g_optimizer.step()
        
-        if it % 2 == 0:
+        if it % 4 == 0:
             plt.clf()
-            vis_data(X,PARAMETERS["f1"],PARAMETERS["f2"])
+            vis_data(scaler.transform(X),PARAMETERS["f1"],PARAMETERS["f2"])
             
             vis_g()
             
-            vis_d()
+            #vis_d()
             display.clear_output(wait=True)
             display.display(plt.gcf())
-            print(f"Iteration {it}")    
+            print(f"Epoch {epoch}; Iteration {it}")    
 def test(args,generator, discriminator,test_loader):
     pass    
 #%%
