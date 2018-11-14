@@ -30,6 +30,15 @@ from IPython import display
 
 torch.set_num_threads(4)
 #%%
+
+# ===========================
+# IMPORTANT PARAMETER:
+# Number of D updates per G update
+# ===========================
+# k_d, k_g = 1, 1
+PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 10, "batchsize": 64, "batchsize_test": 500, "noise_dim": 20,"k_d":1, "k_g":1, "f1":0,"f2":1}
+
+
 def sample_noise(N):
     return np.random.normal(size=(N,PARAMETERS["noise_dim"])).astype(np.float32)
 
@@ -235,13 +244,6 @@ class MyDataSet(torchdata.Dataset):
 #%%
 input_shape = X.shape[1]
 output_shape = 16#len(set(Y))
-# ===========================
-# IMPORTANT PARAMETER:
-# Number of D updates per G update
-# ===========================
-# k_d, k_g = 1, 1
-PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 10, "batchsize": 64, "batchsize_test": 500, "noise_dim": 20,"k_d":1, "k_g":1, "f1":0,"f2":1}
-
 
 #%%
 #CLASSICAL GAN
