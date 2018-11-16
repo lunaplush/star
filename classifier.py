@@ -17,7 +17,7 @@ import sklearn
 from sklearn import datasets, linear_model, metrics
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
-PARAMETERS   = {"lr": 0.01, "momentum": 0.5, "epochs": 100, "batchsize": 64, "batchsize_test": 500}
+PARAMETERS   = {"lr": 0.01, "momentum": 0.5, "epochs": 200, "batchsize": 64, "batchsize_test": 500}
 
 
 # %% my funcs

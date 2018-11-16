@@ -14,15 +14,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import csv
+import matplotlib as mpl
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import confusion_matrix
-
+import time
 
 
 
 from matplotlib.colors import ListedColormap
+from matplotlib.patches import Ellipse, Polygon
 from sklearn import datasets, linear_model, metrics
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
@@ -31,17 +33,19 @@ from IPython import display
 torch.set_num_threads(4)
 #%%
 
-# ===========================
+# ==========================)=
 # IMPORTANT PARAMETER:
 # Number of D updates per G update
 # ===========================
 # k_d, k_g = 1, 1
-PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 1000, "batchsize": 64, "batchsize_test": 500, "noise_dim": 20,"k_d":1, "k_g":1, "f1":0,"f2":1}
+PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 2000, "batchsize": 64, "batchsize_test": 500, "noise_dim": 40,"k_d":1, "k_g":1, "f1":0,"f2":1,"hidden_g":200,"hidden_d":240}
+
 
 
 
 
 #%%
+
 def sample_noise(N):
     return np.random.normal(size=(N,PARAMETERS["noise_dim"])).astype(np.float32)
 
@@ -60,7 +64,7 @@ def vis_data(data, f1,f2):
     plt.pcolormesh(hist[1], hist[2], hist[0], alpha=0.5)
 
 fixed_noise = torch.Tensor(sample_noise(1000))
-def vis_g():
+def vis_g(f1,f2):
     """
         Visualizes generator's samples as circles
     """
@@ -68,7 +72,7 @@ def vis_g():
     if np.isnan(data).any():
         return
     
-    plt.scatter(data[:,0], data[:,1], alpha=0.2, c='b')
+    plt.scatter(data[:,f1], data[:,f2], alpha=0.2, c='b')
     plt.xlim(lims)
     plt.ylim(lims)
     
@@ -246,12 +250,12 @@ class MyDataSet(torchdata.Dataset):
     
 #%%
 input_shape = X.shape[1]
-output_shape = 16#len(set(Y))
+#output_shape = 16#len(set(Y))
 
 #%%
 #CLASSICAL GAN
 
-def get_generator(noise_dim, out_dim, hidden_dim=100):
+def get_generator(noise_dim, out_dim, hidden_dim=PARAMETERS["hidden_g"]):
     layers = [
         nn.Linear(noise_dim, hidden_dim),
         nn.LeakyReLU(),
@@ -261,7 +265,7 @@ def get_generator(noise_dim, out_dim, hidden_dim=100):
     ]
     return nn.Sequential(*layers)
 
-def get_discriminator(in_dim, hidden_dim=100):
+def get_discriminator(in_dim, hidden_dim=PARAMETERS["hidden_d"]):
     layers = [
         nn.Linear(in_dim, hidden_dim),
         nn.LeakyReLU(),
@@ -306,7 +310,7 @@ Y = Y.astype(np.int64)
 
 plt.rcParams['figure.figsize'] = (12, 12)
 vis_data(scaler.transform(X),PARAMETERS["f1"],PARAMETERS["f2"])
-vis_g()
+vis_g(PARAMETERS["f1"], PARAMETERS["f2"])
 #vis_d()
 plt.show()
 #s = StratifiedShuffleSplit(n_splits= 1, train_size= 0.7)
@@ -314,7 +318,7 @@ plt.show()
 PSdataset_train = MyDataSet(X,Y, transform = scaler.transform)
 #PSdataset_test = MyDataSet(X[test_index],Y[test_index], transform=scaler.transform)
 train_loader = torchdata.DataLoader(PSdataset_train, batch_size= PARAMETERS["batchsize"], shuffle =True )
-#test_loader  = torchdata.DataLoader(PSdataset_test,batch_size=  PSdataset_test.Y.shape[0], shuffle = True)
+test_loader  = torchdata.DataLoader(PSdataset_train, batch_size=  PSdataset_train.Y.shape[0], shuffle = True)
 
 #%%
 
@@ -349,23 +353,72 @@ def train(args, generator, discriminator, train_loader, d_optimizer, g_optimizer
             # Update
             g_optimizer.step()
        
-        if it % 4 == 0:
-            plt.clf()
-            vis_data(scaler.transform(X),PARAMETERS["f1"],PARAMETERS["f2"])
-            
-            vis_g()
 
-            #vis_d()
-            display.clear_output(wait=True)
-            display.display(plt.gcf())
-            print(f"Epoch {epoch}; Iteration {it}")    
-def test(args,generator, discriminator,test_loader):
-    pass    
+        #print(f"Epoch {epoch}; Iteration {it}")
+def test(args,generator, discriminator,test_loader,epoch):
+   #discriminator results
+   with torch.no_grad():
+       for real_data in test_loader:
+           noise = torch.Tensor(sample_noise(real_data.shape[0]))
+           d_scores_real = discriminator(real_data)
+           d_scores_fake = discriminator(generator(noise))
+           test_loss = d_loss(d_scores_fake,d_scores_real).item()
+
+           #pred = output.max(1, keepdim=True)[1]
+           #tmp = torch.tensor(pred.eq(target.view_as(pred)), dtype=torch.float32)
+           #correct += int(tmp.sum().item())
+           #all += target.shape[0]
+
+   plt.clf()
+   vis_data(scaler.transform(X), PARAMETERS["f1"], PARAMETERS["f2"])
+   vis_g(PARAMETERS["f1"], PARAMETERS["f2"])
+    # vis_d()
+   display.clear_output(wait=True)
+   display.display(plt.gcf())
+   if epoch % 100 ==0:
+       plt.savefig("GAN_results/v{:d}_{:4d}_{:2}_{:2d}_{}h{}m{}s.jpg".format(epoch, time.gmtime()[0],time.gmtime()[1],time.gmtime()[2],time.gmtime()[3],time.gmtime()[4],time.gmtime()[5]))
+   print('EPOCH {}. Test set: Average loss {:.4f}% '.format(epoch,test_loss))
+
+   return test_loss,d_scores_real
 #%%
 
 for epoch in range(1, PARAMETERS["epochs"] + 1):
 
     train(PARAMETERS, generator, discriminator, train_loader, d_optimizer,g_optimizer, epoch)
-
-    test(PARAMETERS, generator, discriminator, train_loader)
+    (test_loss,d_scores_real) = test(PARAMETERS, generator, discriminator, test_loader,epoch)
 plt.show()
+
+def show_result(f1 = 0,f2 = 1):
+
+    fig, ax = plt.subplots()
+    noise_1 = torch.Tensor(np.random.uniform(low=lims[0], high=lims[1], size=(10000,PARAMETERS["noise_dim"])).astype(np.float32))
+
+    #plt.scatter(fixed_noise[:,f1],fixed_noise[:,f2], c ="r", marker="*")
+    #generator_result = generator(fixed_noise).detach().numpy()
+    generator_result = generator(noise_1).detach().numpy()
+    ax.scatter(generator_result[:,f1],generator_result[:,f2], c= "mediumblue",alpha=0.7, label = "data from generator")
+    data = scaler.transform((X))
+    ax.scatter(data[:,f1],data[:,f2],c = "mediumpurple", marker="*", alpha=0.7, label = "real data")
+    square = [[lims[0],lims[0]],[lims[0],lims[1]],[lims[1],lims[1]],[lims[1],lims[0]]]
+    ax.add_patch(Polygon(square,closed=True,fill = False, color="purple"))
+    ax.legend()
+    plt.xlabel(f"feature{f1}")
+    plt.ylabel(f"feature{f2}")
+    plt.title("standard GAN")
+    fig.show()
+    plt.savefig("GAN_results/generator_{:4d}_{:2}_{:2d}_{}h{}m{}s.jpg".format(time.gmtime()[0],time.gmtime()[1],time.gmtime()[2],time.gmtime()[3],time.gmtime()[4],time.gmtime()[5]))
+
+def show_result_discriminator(f1 = 0,f2 = 1):
+    noise_1 = torch.Tensor(np.random.uniform(low= lims[0], high = lims[1], size = (X.shape[0], input_shape)).astype(np.float32))
+    discriminator_uniforn_result =  discriminator(noise_1).detach().numpy()
+    discriminator_real_result = discriminator(torch.tensor(scaler.transform(X))).detach().numpy()
+    fig,ax = plt.subplots()
+    hist_uni = plt.hist(discriminator_uniforn_result,10, color = "mediumblue",facecolor = "mediumblue", align = "left", label = "discriminator from uniform noise data",alpha=0.75)
+    hist_real = plt.hist(discriminator_real_result,10, color= "mediumpurple", facecolor = "mediumpurple", align = "right",label = "discriminator from real data",alpha=0.75)
+    plt.legend()
+    plt.xlabel("discriminator output")
+    plt.ylabel("discriminator output frequency")
+    plt.xlim([0,1])
+    plt.show()
+    return (hist_uni,hist_real)
+
