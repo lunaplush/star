@@ -20,9 +20,6 @@ import seaborn as sns
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import confusion_matrix
 import time
-
-
-
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Ellipse, Polygon
 from sklearn import datasets, linear_model, metrics
@@ -38,7 +35,9 @@ torch.set_num_threads(4)
 # Number of D updates per G update
 # ===========================
 # k_d, k_g = 1, 1
-PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 2000, "batchsize": 64, "batchsize_test": 500, "noise_dim": 40,"k_d":1, "k_g":1, "f1":0,"f2":1,"hidden_g":200,"hidden_d":240}
+PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 100, "batchsize": 64, "batchsize_test": 120,\
+              "noise_dim": 40,"k_d":1, "k_g":1, "f1":0,"f2":1,"hidden_g":20,"hidden_d":50}
+
 
 
 
@@ -396,9 +395,9 @@ def show_result(f1 = 0,f2 = 1):
     #plt.scatter(fixed_noise[:,f1],fixed_noise[:,f2], c ="r", marker="*")
     #generator_result = generator(fixed_noise).detach().numpy()
     generator_result = generator(noise_1).detach().numpy()
-    ax.scatter(generator_result[:,f1],generator_result[:,f2], c= "mediumblue",alpha=0.7, label = "data from generator")
+    ax.scatter(generator_result[:,f1],generator_result[:,f2], c= "mediumblue",alpha=0.7, label = "data from generator", s =2)
     data = scaler.transform((X))
-    ax.scatter(data[:,f1],data[:,f2],c = "mediumpurple", marker="*", alpha=0.7, label = "real data")
+    ax.scatter(data[:,f1],data[:,f2],c = "mediumpurple", marker="*", alpha=0.7, label = "real data",s = 2)
     square = [[lims[0],lims[0]],[lims[0],lims[1]],[lims[1],lims[1]],[lims[1],lims[0]]]
     ax.add_patch(Polygon(square,closed=True,fill = False, color="purple"))
     ax.legend()
@@ -418,7 +417,7 @@ def show_result_discriminator(f1 = 0,f2 = 1):
     plt.legend()
     plt.xlabel("discriminator output")
     plt.ylabel("discriminator output frequency")
-    plt.xlim([0,1])
+    #plt.xlim([0.4995,0.51])
     plt.show()
     return (hist_uni,hist_real)
 
