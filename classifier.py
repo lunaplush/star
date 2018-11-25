@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pylot as plt
 import time
 import csv
 from sklearn.preprocessing import StandardScaler
@@ -18,6 +18,7 @@ from sklearn import datasets, linear_model, metrics
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
 PARAMETERS   = {"lr": 0.01, "momentum": 0.5, "epochs": 200, "batchsize": 64, "batchsize_test": 500}
+#Работая с моделью, для которой написан алгоритм, необходимо рассматривать два этапа - обучение модели и анализ модели.
 
 
 # %% my funcs
