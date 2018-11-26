@@ -19,7 +19,7 @@ from matplotlib.colors import ListedColormap
 from sklearn import datasets, linear_model, metrics
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
-
+ 
 
 #%% my funcs
 def make_same_length_classes(X,Y):
