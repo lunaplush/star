@@ -13,21 +13,22 @@ torch.set_num_threads(4)
 
 #%% PARAMETERS
 VISUALISATION = True
-
+#N - Количество элементов сгенерированных данных
+#M - #Размерность данных 
 PARAMETERS = {"lr":0.001,
               "momentum":0.5,\
               "epochs": 100,\
               "batchsize": 64,\
               "batchsize_test": 120,\
-              "noise_dim": 2,\      
-              "k_d":1,\       
+              "noise_dim": 2,\
+              "k_d":1,\
               "k_g":1,\
-              "f1":0,\ 
-              "f2":1,\ 
+              "f1":0,\
+              "f2":1,\
               "hidden_g":50,\
               "hidden_d":80,\
-              "N":6400,\ #Количество элементов сгенерированных данных
-              "M":2,\ #Размерность данных    
+              "N":6400,\
+              "M":2,\
               "N_noise":1000,\
               "epoch_visualisation":100,\
               "accuracy_learing_rate":0.001 }
@@ -175,7 +176,7 @@ class Discriminator(nn.Module):
         return x
 
 generator =  Generator(PARAMETERS["noise_dim"],PARAMETERS["hidden_g"])
-discriminatro = Discriminator(PARAMETERS["hidden_d"],1)
+discriminator = Discriminator(PARAMETERS["hidden_d"],1)
 
 
 
