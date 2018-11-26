@@ -17,9 +17,11 @@ import sklearn
 from sklearn import datasets, linear_model, metrics
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
-PARAMETERS   = {"lr": 0.01, "momentum": 0.5, "epochs": 200, "batchsize": 64, "batchsize_test": 500}
-
-
+PARAMETERS   = {"lr": 0.01, "momentum": 0.5, "epochs": 100, "batchsize": 64, "batchsize_test": 500}
+#Работая с моделью, для которой написан алгоритм, необходимо рассматривать два этапа - обучение модели и анализ модели.
+Load_Model = True
+Name_Load_Model = "classifier.pth"
+from my_confusion_matrix import plot_confusion_matrix
 # %% my funcs
 def make_same_length_classes(X, Y):
     len = [Y[Y == k].shape[0] for k in set(Y)]
@@ -45,7 +47,7 @@ def make_same_length_classes(X, Y):
 
 
 np.random.seed(15)
-INPUT_DATA = 1  # 1 - Model data
+INPUT_DATA = 2  # 1 - Model data
 # 2 - PetroSpec
 
 # %% read data from file
@@ -176,6 +178,9 @@ def test(args, model, test_loader):
 
 
 model = Net()
+if Load_Model :
+    model.load_state_dict(torch.load(Name_Load_Model))
+    model.eval()
 # model.load_state_dict(torch.load("PS_classifier.pt"))
 # model.eval()
 
@@ -198,15 +203,28 @@ PSdataset_train = MyDataSet(X[train_index], Y[train_index], transform=scaler.tra
 PSdataset_test = MyDataSet(X[test_index], Y[test_index], transform=scaler.transform)
 train_loader = torchdata.DataLoader(PSdataset_train, batch_size=PARAMETERS["batchsize"], shuffle=True)
 test_loader = torchdata.DataLoader(PSdataset_test, batch_size=PSdataset_test.Y.shape[0], shuffle=True)
-for epoch in range(1, PARAMETERS["epochs"] + 1):
-    train(PARAMETERS, model, train_loader, optimizer, epoch)
+if Load_Model == False:
+    for epoch in range(1, PARAMETERS["epochs"] + 1):
+        train(PARAMETERS, model, train_loader, optimizer, epoch)
+        C, Y_target, Y_pred = test(PARAMETERS, model, test_loader)
+else:
     C, Y_target, Y_pred = test(PARAMETERS, model, test_loader)
 F_score = sklearn.metrics.f1_score(Y_target, Y_pred, average=None)
 F_score_avarage = sklearn.metrics.f1_score(Y_target, Y_pred, average='micro')
 print(C)
+plt.figure()
+plot_confusion_matrix(C,classes = np.arange(1,18),
+                      title='Confusion matrix, without normalization')
+
+# Plot normalized confusion matrix
+plt.figure()
+plot_confusion_matrix(C, classes = np.arange(1,18), normalize=True,
+                      title='Normalized confusion matrix')
+
 print(F_score_avarage)
 ILLUSTRATE = True
 if True:
+    plt.figure()
     plt.scatter(X[:, 0], X[:, 1], c=Y, cmap=plt.cm.Paired)
 
     Y_net = model(torch.from_numpy(scaler.transform(X).astype(np.float32))).max(1, keepdim=True)[1]

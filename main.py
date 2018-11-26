@@ -162,10 +162,10 @@ PARAMETERS = {"lr":0.01, "momentum":0.5,"epochs": 500, "batchsize": 64, "batchsi
 #https://github.com/pytorch/examples/blob/m aster/mnist/main.py
 
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self, hidden = 50 ):
         super(Net,self).__init__()
-        self.fc1 = nn.Linear(input_shape,50)
-        self.fc2 = nn.Linear(50, output_shape)
+        self.fc1 = nn.Linear(input_shape,hidden)
+        self.fc2 = nn.Linear(hidden, output_shape)
    
     def forward(self,x):
         #x =  x.view(-1,self.num_flat_features(x))
