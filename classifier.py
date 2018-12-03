@@ -17,9 +17,19 @@ import sklearn
 from sklearn import datasets, linear_model, metrics
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
-PARAMETERS   = {"lr": 0.01, "momentum": 0.5, "epochs": 100, "batchsize": 64, "batchsize_test": 500}
+
+torch.manual_seed(123)
+
+PARAMETERS   = {"lr": 0.01, "momentum": 0.5, "epochs": 1, "batchsize": 64, "batchsize_test": 500}
+
 #Работая с моделью, для которой написан алгоритм, необходимо рассматривать два этапа - обучение модели и анализ модели.
-Load_Model = True
+
+##ЗАГРУЗКА ИЗ ПАМЯТИ
+Load_Model = False
+PARAMETERS["epochs"] = 1
+
+
+
 Name_Load_Model = "classifier.pth"
 from my_confusion_matrix import plot_confusion_matrix
 # %% my funcs
@@ -128,6 +138,7 @@ class Net(nn.Module):
 
     def forward(self, x):
         # x =  x.view(-1,self.num_flat_features(x))
+
         x = self.fc1(x).clamp(min=0)
         x = self.fc2(x)
         return x  # F.log_softmax(x,dim = 1)
@@ -212,14 +223,14 @@ else:
 F_score = sklearn.metrics.f1_score(Y_target, Y_pred, average=None)
 F_score_avarage = sklearn.metrics.f1_score(Y_target, Y_pred, average='micro')
 print(C)
-plt.figure()
-plot_confusion_matrix(C,classes = np.arange(1,18),
-                      title='Confusion matrix, without normalization')
+#plt.figure()
+#plot_confusion_matrix(C,classes = np.arange(1,18),
+                     # title='Confusion matrix, without normalization')
 
 # Plot normalized confusion matrix
-plt.figure()
-plot_confusion_matrix(C, classes = np.arange(1,18), normalize=True,
-                      title='Normalized confusion matrix')
+#plt.figure()
+#plot_confusion_matrix(C, classes = np.arange(1,18), normalize=True,
+                     # title='Normalized confusion matrix')
 
 print(F_score_avarage)
 ILLUSTRATE = True
