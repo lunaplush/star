@@ -214,7 +214,7 @@ PSdataset_train = MyDataSet(X[train_index], Y[train_index], transform=scaler.tra
 PSdataset_test = MyDataSet(X[test_index], Y[test_index], transform=scaler.transform)
 train_loader = torchdata.DataLoader(PSdataset_train, batch_size=PARAMETERS["batchsize"], shuffle=True)
 test_loader = torchdata.DataLoader(PSdataset_test, batch_size=PSdataset_test.Y.shape[0], shuffle=True)
-if Load_Model == False:
+if not Load_Model:
     for epoch in range(1, PARAMETERS["epochs"] + 1):
         train(PARAMETERS, model, train_loader, optimizer, epoch)
         C, Y_target, Y_pred = test(PARAMETERS, model, test_loader)

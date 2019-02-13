@@ -7,12 +7,31 @@ import torch.optim as optim
 
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 import time
 
+parser = argparse.ArgumentParser(description='Alex GAN')
+parser.add_argument('--batch-size', type=int, default=64, metavar='N',
+                    help='input batch size for training (default: 64)')
+parser.add_argument('--epochs', type=int, default=10, metavar='N',
+                    help='number of epochs to train (default: 10)')
+parser.add_argument('--lr', type=float, default=0.003, metavar='LR',
+                    help='learning rate (default: 0.003)')
+parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
+                    help='SGD momentum (default: 0.5)')
+parser.add_argument('--cuda', action='store_true', default=False,
+                    help='CUDA training')
+parser.add_argument('--seed', type=int, default=123, metavar='S',
+                    help='random seed (default: 123)')
+parser.add_argument('--batch-size-test', type=int, default=64, metavar='N',
+                    help='input batch size for training (default: 64)')
 
+
+
+args = parser.parse_args()
 #torch.set_num_threads(4)
-torch.manual_seed(127)
+torch.manual_seed(args.seed)
 lims = (-5,5)
 #%% PARAMETERS
 VISUALISATION = True
@@ -20,10 +39,10 @@ VISUALISATION = True
 
 #N - Количество элементов сгенерированных данных
 #M - #Размерность данных 
-PARAMETERS = {"lr":0.001,
-              "momentum":0.5,\
-              "epochs": 100,\
-              "batchsize": 64,\
+#PARAMETERS = {"lr":0.001,
+              #"momentum":0.5,\
+              #"epochs": 100,\
+              #"batchsize": 64,\
               "batchsize_test": 120,\
               "noise_dim": 2,\
               "k_d":1,\

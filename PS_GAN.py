@@ -325,6 +325,7 @@ test_loader  = torchdata.DataLoader(PSdataset_train, batch_size=  PSdataset_trai
 def train(args, generator, discriminator, train_loader, d_optimizer, g_optimizer, epoch):
     for it, real_data in enumerate(train_loader):
         for _ in range(args["k_d"]):
+            ##Не правильно если k_d >1,
             d_optimizer.zero_grad()
             noise = torch.Tensor(sample_noise(real_data.shape[0]))
             fake_data = generator(noise)

@@ -15,7 +15,7 @@ torch.set_num_threads(4)
 # ===========================
 # k_d, k_g = 1, 1
 PARAMETERS = {"lr":0.001, "momentum":0.5,"epochs": 1, "batchsize": 64, "batchsize_test": 128,\
-              "noise_dim": 10,"k_d":1, "k_g":1, "f1":0,"f2":1,"hidden_g":20,"hidden_d":50}
+               , "f1":0,"f2":1,"hidden_g":20,"hidden_d":50}
 
 
 
